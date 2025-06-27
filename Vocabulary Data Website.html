@@ -1,0 +1,2596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary Checker</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Set Inter font -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for better scrolling */
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 16px; /* More rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        .input-group, .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        .input-group input {
+            flex-grow: 1;
+            padding: 12px 18px;
+            border: 1px solid #cbd5e1; /* Gray-300 */
+            border-radius: 8px;
+            font-size: 1rem;
+            min-width: 200px; /* Ensure input is not too small */
+        }
+        .btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            white-space: nowrap; /* Prevent button text from wrapping */
+        }
+        .btn-primary {
+            background-color: #4c51bf; /* Indigo-700 */
+            color: white;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #434190; /* Darker Indigo */
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #e2e8f0; /* Gray-200 */
+            color: #2d3748; /* Gray-800 */
+            border: 1px solid #cbd5e1;
+        }
+        .btn-secondary:hover {
+            background-color: #cbd5e1; /* Darker Gray */
+            transform: translateY(-2px);
+        }
+        .data-card {
+            background-color: #edf2f7; /* Gray-100 */
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 15px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .data-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #2d3748; /* Gray-800 */
+            margin-bottom: 10px;
+        }
+        .data-card p, .data-card ul {
+            font-size: 1rem;
+            color: #4a5568; /* Gray-700 */
+            line-height: 1.6;
+        }
+        .data-card ul {
+            list-style: disc;
+            padding-left: 20px;
+        }
+        .message-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .message-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-content h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        .modal-content p {
+            margin-bottom: 25px;
+            color: #4a5568;
+        }
+        .modal-content button {
+            background-color: #4c51bf;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .modal-content button:hover {
+            background-color: #434190;
+        }
+        .saved-words-list {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        .saved-words-list li {
+            background-color: #e0e7ff; /* Indigo-100 */
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 500;
+            color: #2d3748;
+            text-align: center;
+            word-break: break-word; /* Prevent long words from overflowing */
+        }
+        .saved-words-list li:hover {
+            background-color: #c7d2fe; /* Indigo-200 */
+        }
+        .pronunciation-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .pronunciation-row button {
+            padding: 6px 12px;
+            background-color: #6366f1; /* Indigo-500 */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 0.9rem;
+        }
+        .pronunciation-row button:hover {
+            background-color: #4338ca; /* Indigo-700 */
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            display: none; /* Hidden by default */
+        }
+        .spinner {
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid #4c51bf; /* Blue */
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .quiz-option {
+            padding: 10px;
+            margin-bottom: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: #ffffff;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .quiz-option:hover {
+            background-color: #e2e8f0;
+        }
+        .quiz-option.correct {
+            background-color: #d1fae5; /* Green-100 */
+            border-color: #34d399; /* Green-500 */
+            font-weight: 600;
+        }
+        .quiz-option.incorrect {
+            background-color: #fee2e2; /* Red-100 */
+            border-color: #ef4444; /* Red-500 */
+            font-weight: 600;
+        }
+        .quiz-feedback {
+            margin-top: 10px;
+            font-weight: 600;
+        }
+        .quiz-feedback.correct {
+            color: #059669; /* Green-600 */
+        }
+        .quiz-feedback.incorrect {
+            color: #dc2626; /* Red-600 */
+        }
+        .generate-btn-container {
+            text-align: right; /* Aligns the button to the right */
+            margin-top: 10px;
+        }
+        .generate-btn {
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            background-color: #60a5fa; /* Blue-400 */
+            color: white;
+            border: none;
+            transition: background-color 0.2s;
+        }
+        .generate-btn:hover {
+            background-color: #3b82f6; /* Blue-500 */
+        }
+        .translation-sub-section h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 5px;
+            margin-top: 15px;
+        }
+        .style-select-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .style-select-group label {
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .style-select-group select {
+            flex-grow: 1;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background-color: #ffffff;
+            cursor: pointer;
+        }
+        .word-family-list, .suffix-prefix-list, .idioms-phrases-list, .cultural-context-list, .collocations-list { /* Combined for similar styling */
+            list-style: none;
+            padding: 0;
+        }
+        .word-family-list li, .suffix-prefix-list li, .idioms-phrases-list li, .cultural-context-list li, .collocations-list li { /* Combined for similar styling */
+            margin-bottom: 5px;
+            color: #4a5568;
+            font-size: 1rem;
+        }
+        .word-family-list li strong, .suffix-prefix-list li strong, .idioms-phrases-list li strong, .cultural-context-list li strong, .collocations-list li strong { /* Combined for similar styling */
+            color: #2d3748;
+            margin-right: 5px;
+        }
+
+        @media (max-width: 640px) {
+            .input-group, .action-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .btn {
+                width: 100%;
+            }
+            .container {
+                padding: 20px;
+            }
+            .saved-words-list {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-5">Vocabulary Checker</h1>
+
+        <div class="input-group">
+            <input type="text" id="wordInput" placeholder="Enter a word (e.g., beautiful)" class="focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button id="searchBtn" class="btn btn-primary">Search Word</button>
+            <button id="saveBtn" class="btn btn-secondary">Save Current Word</button>
+            <button id="loadBtn" class="btn btn-secondary">Load Saved Words</button>
+        </div>
+
+        <div id="resultDisplay" class="hidden">
+            <h2 id="displayWord" class="text-2xl font-bold text-gray-800 mb-3 capitalize"></h2>
+
+            <div id="meaningCard" class="data-card">
+                <h3>Meaning</h3>
+                <p id="meaningText"></p>
+            </div>
+
+            <div id="synonymsCard" class="data-card">
+                <h3>Synonyms</h3>
+                <ul id="synonymsList"></ul>
+            </div>
+
+            <div id="antonymsCard" class="data-card">
+                <h3>Antonyms</h3>
+                <ul id="antonymsList"></ul>
+            </div>
+
+            <div id="pronunciationCard" class="data-card">
+                <h3>Pronunciation</h3>
+                <div class="pronunciation-row">
+                    <p>US: <span id="usPronunciation"></span></p>
+                    <button id="playUsPronunciation">Play US</button>
+                </div>
+                <div class="pronunciation-row mt-2">
+                    <p>UK: <span id="ukPronunciation"></span></p>
+                    <button id="playUkPronunciation">Play UK</button>
+                </div>
+            </div>
+
+            <!-- Example Sentences Card -->
+            <div id="examplesCard" class="data-card">
+                <h3>Example Sentences ✨</h3>
+                <ul id="examplesList"></ul>
+            </div>
+
+            <!-- Word in Context Story Card -->
+            <div id="storyCard" class="data-card">
+                <h3>Word in Context Story ✨</h3>
+                <p id="storyText"></p>
+                <div class="generate-btn-container">
+                    <button id="generateStoryBtn" class="generate-btn">Generate Story</button>
+                </div>
+            </div>
+
+            <!-- Usage Tips & Common Mistakes Card -->
+            <div id="usageTipsCard" class="data-card">
+                <h3>Usage Tips & Common Mistakes ✨</h3>
+                <p id="usageTipsText"></p>
+                <div class="generate-btn-container">
+                    <button id="generateTipsBtn" class="generate-btn">Generate Tips</button>
+                </div>
+            </div>
+
+            <!-- Quiz Question Card -->
+            <div id="quizCard" class="data-card">
+                <h3>Quiz Question ✨</h3>
+                <p id="quizQuestionText" class="mb-3"></p>
+                <div id="quizOptionsContainer" class="flex flex-col gap-2">
+                    <!-- Quiz options will be inserted here -->
+                </div>
+                <p id="quizFeedback" class="quiz-feedback hidden"></p>
+                <div class="generate-btn-container">
+                    <button id="generateQuizBtn" class="generate-btn">Generate Quiz</button>
+                </div>
+            </div>
+
+            <!-- Etymology / Word Origin Card -->
+            <div id="etymologyCard" class="data-card">
+                <h3>Etymology / Word Origin ✨</h3>
+                <p id="etymologyText"></p>
+                <div class="generate-btn-container">
+                    <button id="generateEtymologyBtn" class="generate-btn">Generate Etymology</button>
+                </div>
+            </div>
+
+            <!-- Related Concepts / Topics Card -->
+            <div id="relatedConceptsCard" class="data-card">
+                <h3>Related Concepts / Topics ✨</h3>
+                <p id="relatedConceptsText"></p>
+                <div class="generate-btn-container">
+                    <button id="generateConceptsBtn" class="generate-btn">Generate Concepts</button>
+                </div>
+            </div>
+
+            <!-- Synonym/Antonym Nuances Card -->
+            <div id="nuancesCard" class="data-card">
+                <h3>Synonym/Antonym Nuances ✨</h3>
+                <p id="nuanceText"></p>
+                <div class="generate-btn-container">
+                    <button id="generateNuancesBtn" class="generate-btn">Generate Nuances</button>
+                </div>
+            </div>
+
+            <!-- Cross-Language Translation Card -->
+            <div id="translationCard" class="data-card">
+                <h3>Cross-Language Translation ✨</h3>
+                <div class="mb-3">
+                    <label for="translationLanguage" class="block text-gray-700 text-sm font-bold mb-2">Select Language:</label>
+                    <select id="translationLanguage" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        <option value="bangla">Bengali (Bangla)</option>
+                        <option value="korean">Korean</option>
+                        <option value="japanese">Japanese (Romaji/Kana/Kanji)</option>
+                        <option value="filipino">Filipino</option>
+                        <option value="indonesian">Indonesian</option>
+                        <option value="chinese">Chinese (Simplified)</option>
+                        <option value="french">French</option>
+                        <option value="italian">Italian</option>
+                        <option value="arabic">Arabic</option>
+                        <option value="german">German</option>
+                        <option value="russian">Russian</option>
+                    </select>
+                </div>
+                <div id="banglaTranslationContainer" class="translation-sub-section">
+                    <h4>Bengali (Bangla) Translation:</h4>
+                    <p id="banglaTranslationText"></p>
+                </div>
+                <div id="koreanTranslationContainer" class="translation-sub-section hidden">
+                    <h4>Korean Translation:</h4>
+                    <p id="koreanTranslationText"></p>
+                </div>
+                <div id="japaneseTranslationContainer" class="translation-sub-section hidden">
+                    <h4>Japanese Translation:</h4>
+                    <p>Romaji: <span id="japaneseRomajiText"></span></p>
+                    <p>Kana: <span id="japaneseKanaText"></span></p>
+                    <p>Kanji: <span id="japaneseKanjiText"></span></p>
+                </div>
+                <div id="filipinoTranslationContainer" class="translation-sub-section hidden">
+                    <h4>Filipino Translation:</h4>
+                    <p id="filipinoTranslationText"></p>
+                </div>
+                <div id="indonesianTranslationContainer" class="translation-sub-section hidden">
+                    <h4>Indonesian Translation:</h4>
+                    <p id="indonesianTranslationText"></p>
+                </div>
+                <div id="chineseTranslationContainer" class="translation-sub-section hidden">
+                    <h4>Chinese (Simplified) Translation:</h4>
+                    <p id="chineseTranslationText"></p>
+                </div>
+                <div id="frenchTranslationContainer" class="translation-sub-section hidden">
+                    <h4>French Translation:</h4>
+                    <p id="frenchTranslationText"></p>
+                </div>
+                <div id="italianTranslationContainer" class="translation-sub-section hidden">
+                    <h4>Italian Translation:</h4>
+                    <p id="italianTranslationText"></p>
+                </div>
+                <div id="arabicTranslationContainer" class="translation-sub-section hidden">
+                    <h4>Arabic Translation:</h4>
+                    <p id="arabicTranslationText"></p>
+                </div>
+                <div id="germanTranslationContainer" class="translation-sub-section hidden">
+                    <h4>German Translation:</h4>
+                    <p id="germanTranslationText"></p>
+                </div>
+                <div id="russianTranslationContainer" class="translation-sub-section hidden">
+                    <h4>Russian Translation:</h4>
+                    <p id="russianTranslationText"></p>
+                </div>
+                <div class="generate-btn-container">
+                    <button id="generateTranslationBtn" class="generate-btn">Generate Translation</button>
+                </div>
+            </div>
+
+            <!-- Word Usage in Different Styles Card -->
+            <div id="styledUsageCard" class="data-card">
+                <h3>Word Usage in Different Styles ✨</h3>
+                <div class="style-select-group">
+                    <label for="usageStyle">Select Style:</label>
+                    <select id="usageStyle">
+                        <option value="formal">Formal</option>
+                        <option value="informal">Informal</option>
+                        <option value="poetic">Poetic</option>
+                        <option value="journalistic">Journalistic</option>
+                    </select>
+                </div>
+                <p id="styledExampleText"></p>
+                <div class="generate-btn-container">
+                    <button id="generateStyledExampleBtn" class="generate-btn">Generate Example</button>
+                </div>
+            </div>
+
+            <!-- Word Family / Related Terms Card -->
+            <div id="wordFamilyCard" class="data-card">
+                <h3>Word Family / Related Terms ✨</h3>
+                <ul id="wordFamilyList" class="word-family-list">
+                    <!-- Word family items will be inserted here -->
+                </ul>
+                <div class="generate-btn-container">
+                    <button id="generateWordFamilyBtn" class="generate-btn">Generate Word Family</button>
+                </div>
+            </div>
+
+            <!-- Suffix / Prefix Card -->
+            <div id="suffixPrefixCard" class="data-card">
+                <h3>Suffix / Prefix ✨</h3>
+                <ul id="suffixPrefixList" class="suffix-prefix-list">
+                    <!-- Suffix/Prefix items will be inserted here -->
+                </ul>
+                <div class="generate-btn-container">
+                    <button id="generateSuffixPrefixBtn" class="generate-btn">Generate Suffix / Prefix</button>
+                </div>
+            </div>
+
+            <!-- Idioms & Phrases Card -->
+            <div id="idiomsPhrasesCard" class="data-card">
+                <h3>Idioms & Phrases ✨</h3>
+                <ul id="idiomsPhrasesList" class="idioms-phrases-list">
+                    <!-- Idioms and phrases will be inserted here -->
+                </ul>
+                <div class="generate-btn-container">
+                    <button id="generateIdiomsBtn" class="generate-btn">Generate Idioms</button>
+                </div>
+            </div>
+
+            <!-- Cultural Context / Usage Nuances Card -->
+            <div id="culturalContextCard" class="data-card">
+                <h3>Cultural Context / Usage Nuances ✨</h3>
+                <p id="culturalContextText"></p>
+                <div class="generate-btn-container">
+                    <button id="generateCulturalContextBtn" class="generate-btn">Generate Context</button>
+                </div>
+            </div>
+
+            <!-- New: Common Collocations Card -->
+            <div id="collocationsCard" class="data-card">
+                <h3>Common Collocations ✨</h3>
+                <ul id="collocationsList" class="collocations-list">
+                    <!-- Collocations will be inserted here -->
+                </ul>
+                <div class="generate-btn-container">
+                    <button id="generateCollocationsBtn" class="generate-btn">Generate Collocations</button>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="savedWordsSection" class="data-card hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-3">Your Saved Words</h2>
+            <ul id="savedWordsList" class="saved-words-list">
+                <!-- Saved words will be loaded here -->
+            </ul>
+            <div class="mt-4 text-center">
+                 <button id="clearSavedBtn" class="btn btn-secondary">Clear All Saved Words</button>
+            </div>
+        </div>
+
+        <!-- Custom Message Modal -->
+        <div id="messageModal" class="message-modal">
+            <div class="modal-content">
+                <h3 id="modalTitle"></h3>
+                <p id="modalMessage"></p>
+                <button id="modalCloseBtn">OK</button>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="spinner"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // Define an app ID for Firestore (not used directly in this client-side app, but good practice for future expansion)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-vocabulary-app';
+
+        // Get DOM elements
+        const wordInput = document.getElementById('wordInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const loadBtn = document.getElementById('loadBtn');
+        const clearSavedBtn = document.getElementById('clearSavedBtn');
+
+        const resultDisplay = document.getElementById('resultDisplay');
+        const displayWord = document.getElementById('displayWord');
+        const meaningText = document.getElementById('meaningText');
+        const synonymsList = document.getElementById('synonymsList');
+        const antonymsList = document.getElementById('antonymsList');
+        const usPronunciationSpan = document.getElementById('usPronunciation');
+        const ukPronunciationSpan = document.getElementById('ukPronunciation');
+        const playUsBtn = document.getElementById('playUsPronunciation');
+        const playUkBtn = document.getElementById('playUkPronunciation');
+        const examplesList = document.getElementById('examplesList');
+
+        // References to text display areas
+        const storyText = document.getElementById('storyText');
+        const usageTipsText = document.getElementById('usageTipsText');
+        const quizQuestionText = document.getElementById('quizQuestionText');
+        const etymologyText = document.getElementById('etymologyText');
+        const relatedConceptsText = document.getElementById('relatedConceptsText');
+        const nuanceText = document.getElementById('nuanceText');
+        const styledExampleText = document.getElementById('styledExampleText');
+        const wordFamilyList = document.getElementById('wordFamilyList');
+        const suffixPrefixList = document.getElementById('suffixPrefixList');
+        const idiomsPhrasesList = document.getElementById('idiomsPhrasesList');
+        const culturalContextText = document.getElementById('culturalContextText');
+        const collocationsList = document.getElementById('collocationsList'); // New: collocations list
+
+        // Translation specific elements
+        const translationLanguageSelect = document.getElementById('translationLanguage');
+        const banglaTranslationContainer = document.getElementById('banglaTranslationContainer');
+        const koreanTranslationContainer = document.getElementById('koreanTranslationContainer');
+        const japaneseTranslationContainer = document.getElementById('japaneseTranslationContainer');
+        const filipinoTranslationContainer = document.getElementById('filipinoTranslationContainer');
+        const indonesianTranslationContainer = document.getElementById('indonesianTranslationContainer');
+        const chineseTranslationContainer = document.getElementById('chineseTranslationContainer');
+        const frenchTranslationContainer = document.getElementById('frenchTranslationContainer');
+        const italianTranslationContainer = document.getElementById('italianTranslationContainer');
+        const arabicTranslationContainer = document.getElementById('arabicTranslationContainer');
+        const germanTranslationContainer = document.getElementById('germanTranslationContainer');
+        const russianTranslationContainer = document.getElementById('russianTranslationContainer');
+
+        const banglaTranslationText = document.getElementById('banglaTranslationText');
+        const koreanTranslationText = document.getElementById('koreanTranslationText');
+        const japaneseRomajiText = document.getElementById('japaneseRomajiText');
+        const japaneseKanaText = document.getElementById('japaneseKanaText');
+        const japaneseKanjiText = document.getElementById('japaneseKanjiText');
+        const filipinoTranslationText = document.getElementById('filipinoTranslationText');
+        const indonesianTranslationText = document.getElementById('indonesianTranslationText');
+        const chineseTranslationText = document.getElementById('chineseTranslationText');
+        const frenchTranslationText = document.getElementById('frenchTranslationText');
+        const italianTranslationText = document.getElementById('italianTranslationText');
+        const arabicTranslationText = document.getElementById('arabicTranslationText');
+        const germanTranslationText = document.getElementById('germanTranslationText');
+        const russianTranslationText = document.getElementById('russianTranslationText');
+
+        // Styled Usage elements
+        const usageStyleSelect = document.getElementById('usageStyle');
+
+        // References to generate buttons
+        const generateStoryBtn = document.getElementById('generateStoryBtn');
+        const generateTipsBtn = document.getElementById('generateTipsBtn');
+        const generateQuizBtn = document.getElementById('generateQuizBtn');
+        const generateEtymologyBtn = document.getElementById('generateEtymologyBtn');
+        const generateConceptsBtn = document.getElementById('generateConceptsBtn');
+        const generateNuancesBtn = document.getElementById('generateNuancesBtn');
+        const generateTranslationBtn = document.getElementById('generateTranslationBtn');
+        const generateStyledExampleBtn = document.getElementById('generateStyledExampleBtn');
+        const generateWordFamilyBtn = document.getElementById('generateWordFamilyBtn');
+        const generateSuffixPrefixBtn = document.getElementById('generateSuffixPrefixBtn');
+        const generateIdiomsBtn = document.getElementById('generateIdiomsBtn');
+        const generateCulturalContextBtn = document.getElementById('generateCulturalContextBtn');
+        const generateCollocationsBtn = document.getElementById('generateCollocationsBtn'); // New: collocations button
+
+
+        // Quiz specific elements
+        const quizOptionsContainer = document.getElementById('quizOptionsContainer');
+        const quizFeedback = document.getElementById('quizFeedback');
+
+        const savedWordsSection = document.getElementById('savedWordsSection');
+        const savedWordsList = document.getElementById('savedWordsList');
+
+        const messageModal = document.getElementById('messageModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Global variable to store the current word data fetched from API
+        let currentWordData = null;
+        let currentWord = '';
+
+        // Function to show custom message modal
+        function showMessage(title, message) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            messageModal.classList.add('show');
+        }
+
+        // Function to hide custom message modal
+        function hideMessage() {
+            modalTitle.textContent = ''; // Clear content for next use
+            modalMessage.textContent = '';
+            modalCloseBtn.textContent = 'OK'; // Reset button text to default "OK"
+            // Remove the dynamically added confirmation button if it exists
+            const confirmBtn = modalCloseBtn.parentNode.querySelector('#confirmClearBtn');
+            if (confirmBtn) {
+                confirmBtn.removeEventListener('click', handleConfirmClear); // Clean up its listener
+                confirmBtn.remove();
+            }
+            // Ensure this listener is removed regardless of how the modal was closed
+            // This specifically targets the 'No' behavior for clearSavedBtn's modal
+            modalCloseBtn.removeEventListener('click', handleModalCloseNo);
+            messageModal.classList.remove('show');
+        }
+
+        // Event listener for closing modal when "OK" or default "No" is clicked
+        modalCloseBtn.addEventListener('click', hideMessage);
+        messageModal.addEventListener('click', (e) => {
+            if (e.target === messageModal) {
+                hideMessage();
+            }
+        });
+
+        // Function to show loading spinner
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+
+        // Function to hide loading spinner
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        // Function to speak text using Web Speech API
+        function speakText(text, lang) {
+            console.log(`Attempting to speak "${text}" with requested language "${lang}"`);
+            if ('speechSynthesis' in window) {
+                // If speech is already in progress, stop it.
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                    console.log('Cancelled existing speech.');
+                }
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                const voices = window.speechSynthesis.getVoices();
+                let selectedVoice = null;
+
+                console.log(`Total available voices: ${voices.length}`);
+                // voices.forEach(v => console.log(`${v.name} (${v.lang})`)); // Uncomment to list all voices for debugging
+
+                // Simplified voice selection: prioritize specific lang, then any English.
+                if (lang === 'en-US') {
+                    selectedVoice = voices.find(voice => voice.lang === 'en-US');
+                    utterance.lang = 'en-US';
+                } else if (lang === 'en-GB') {
+                    selectedVoice = voices.find(voice => voice.lang === 'en-GB');
+                    utterance.lang = 'en-GB';
+                } else {
+                    // Fallback for unexpected language codes
+                    selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
+                    utterance.lang = 'en-US'; // Default language if no specific match
+                }
+
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                    console.log(`Using voice: "${selectedVoice.name}" (Lang: ${selectedVoice.lang})`);
+                } else {
+                    console.warn(`No specific ${lang} voice found. Browser will use a default voice for language "${utterance.lang}".`);
+                }
+
+                utterance.onerror = (event) => {
+                    console.error('SpeechSynthesisUtterance error:', event);
+                    let errorMessage = 'Could not play pronunciation.';
+                    switch (event.error) {
+                        case 'network':
+                            errorMessage += ' Check your internet connection or browser settings.';
+                            break;
+                        case 'synthesis-failed':
+                            errorMessage += ' The speech synthesis failed. Your browser might not have suitable voices installed or enabled.';
+                            break;
+                        case 'language-unavailable':
+                            errorMessage += ' The requested language voice is not available on your system.';
+                            break;
+                        case 'not-allowed':
+                            errorMessage += ' Your browser might require a user gesture (like a click) to enable speech or has restrictions. Try interacting with the page first.';
+                            break;
+                        case 'audio-busy':
+                            errorMessage += ' Your audio device might be busy.';
+                            break;
+                        default:
+                            errorMessage += ' It might be due to an unknown browser issue or no suitable voice found.';
+                    }
+                    showMessage('Speech Error', errorMessage + ' Please check your browser console for more details.');
+                };
+                utterance.onend = () => {
+                    console.log('SpeechSynthesisUtterance ended.');
+                };
+
+                window.speechSynthesis.speak(utterance);
+                console.log('SpeechSynthesis initiated.');
+            } else {
+                showMessage('Speech Not Supported', 'Your browser does not support the Web Speech API for pronunciation.');
+                console.error('Web Speech API not supported in this browser.');
+            }
+        }
+
+        // Event listeners for pronunciation buttons
+        playUsBtn.addEventListener('click', () => {
+            if (currentWordData && currentWordData.pronunciation && currentWord) {
+                speakText(currentWord, 'en-US'); // Speak the actual word, not just the phonetic spelling
+            } else {
+                showMessage('No Word', 'Please search for a word first to hear its pronunciation.');
+            }
+        });
+
+        playUkBtn.addEventListener('click', () => {
+            if (currentWordData && currentWordData.pronunciation && currentWord) {
+                speakText(currentWord, 'en-GB'); // Speak the actual word, not just the phonetic spelling
+            } else {
+                showMessage('No Word', 'Please search for a word first to hear its pronunciation.');
+            }
+        });
+
+        // Function to display quiz question
+        function displayQuiz(quiz) {
+            quizOptionsContainer.innerHTML = ''; // Clear previous options
+            quizFeedback.classList.add('hidden'); // Hide feedback
+
+            if (quiz && quiz.question && quiz.options && quiz.options.length > 0 && quiz.correctAnswer) {
+                quizQuestionText.textContent = quiz.question;
+                quiz.options.forEach((option, index) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.classList.add('quiz-option');
+                    optionDiv.textContent = `${String.fromCharCode(65 + index)}. ${option}`;
+                    optionDiv.dataset.answer = option;
+                    optionDiv.addEventListener('click', (e) => checkQuizAnswer(e.target, quiz.correctAnswer));
+                    quizOptionsContainer.appendChild(optionDiv);
+                });
+            } else {
+                quizQuestionText.textContent = 'No quiz question generated.';
+            }
+        }
+
+        // Function to check quiz answer
+        function checkQuizAnswer(selectedOptionElement, correctAnswer) {
+            const allOptions = quizOptionsContainer.querySelectorAll('.quiz-option');
+            allOptions.forEach(option => {
+                option.style.pointerEvents = 'none'; // Disable further clicks
+                if (option.dataset.answer === correctAnswer) {
+                    option.classList.add('correct');
+                }
+            });
+
+            if (selectedOptionElement.dataset.answer === correctAnswer) {
+                quizFeedback.textContent = 'Correct! Well done.';
+                quizFeedback.classList.remove('hidden', 'incorrect');
+                quizFeedback.classList.add('correct');
+            } else {
+                selectedOptionElement.classList.add('incorrect');
+                quizFeedback.textContent = `Incorrect. The correct answer was: "${correctAnswer}"`;
+                quizFeedback.classList.remove('hidden', 'correct');
+                quizFeedback.classList.add('incorrect');
+            }
+        }
+
+        // Function to update translation display based on selected language
+        function updateTranslationDisplay() {
+            // Hide all translation containers first
+            banglaTranslationContainer.classList.add('hidden');
+            koreanTranslationContainer.classList.add('hidden');
+            japaneseTranslationContainer.classList.add('hidden');
+            filipinoTranslationContainer.classList.add('hidden');
+            indonesianTranslationContainer.classList.add('hidden');
+            chineseTranslationContainer.classList.add('hidden');
+            frenchTranslationContainer.classList.add('hidden');
+            italianTranslationContainer.classList.add('hidden');
+            arabicTranslationContainer.classList.add('hidden');
+            germanTranslationContainer.classList.add('hidden');
+            russianTranslationContainer.classList.add('hidden');
+
+            const selectedLang = translationLanguageSelect.value;
+
+            // Show the container for the currently selected language
+            if (selectedLang === 'bangla') {
+                banglaTranslationContainer.classList.remove('hidden');
+            } else if (selectedLang === 'korean') {
+                koreanTranslationContainer.classList.remove('hidden');
+            } else if (selectedLang === 'japanese') {
+                japaneseTranslationContainer.classList.remove('hidden');
+            } else if (selectedLang === 'filipino') {
+                filipinoTranslationContainer.classList.remove('hidden');
+            } else if (selectedLang === 'indonesian') {
+                indonesianTranslationContainer.classList.remove('hidden');
+            } else if (selectedLang === 'chinese') {
+                chineseTranslationContainer.classList.remove('hidden');
+            } else if (selectedLang === 'french') {
+                frenchTranslationContainer.classList.remove('hidden');
+            } else if (selectedLang === 'italian') {
+                italianTranslationContainer.classList.remove('hidden');
+            } else if (selectedLang === 'arabic') {
+                arabicTranslationContainer.classList.remove('hidden');
+            } else if (selectedLang === 'german') {
+                germanTranslationContainer.classList.remove('hidden');
+            } else if (selectedLang === 'russian') {
+                russianTranslationContainer.classList.remove('hidden');
+            }
+        }
+
+        translationLanguageSelect.addEventListener('change', updateTranslationDisplay);
+
+        // Function to display word data
+        function displayWordData(word, data) {
+            resultDisplay.classList.remove('hidden');
+            savedWordsSection.classList.add('hidden'); // Hide saved words when displaying a new search
+
+            displayWord.textContent = word;
+            meaningText.textContent = data.meaning || 'Meaning not available.';
+
+            // Clear previous lists
+            synonymsList.innerHTML = '';
+            antonymsList.innerHTML = '';
+            examplesList.innerHTML = ''; // Clear previous examples
+            wordFamilyList.innerHTML = ''; // Clear word family list
+            suffixPrefixList.innerHTML = ''; // Clear suffix/prefix list
+            idiomsPhrasesList.innerHTML = ''; // Clear idioms list
+            culturalContextText.textContent = ''; // Clear cultural context
+            collocationsList.innerHTML = ''; // Clear collocations list
+
+            // Reset AI generated content areas and buttons
+            storyText.textContent = data.story || '';
+            usageTipsText.textContent = data.usageTips || '';
+            quizQuestionText.textContent = data.quiz ? data.quiz.question : '';
+            quizOptionsContainer.innerHTML = ''; // Always clear quiz options
+            quizFeedback.classList.add('hidden'); // Always hide feedback
+            if (data.quiz) displayQuiz(data.quiz); // Re-display quiz if data exists
+            etymologyText.textContent = data.etymology || '';
+            relatedConceptsText.textContent = data.relatedConcepts || '';
+            nuanceText.textContent = data.nuances || '';
+            culturalContextText.textContent = data.culturalContext || '';
+
+
+            // Clear previous translations
+            banglaTranslationText.textContent = '';
+            koreanTranslationText.textContent = '';
+            japaneseRomajiText.textContent = '';
+            japaneseKanaText.textContent = '';
+            japaneseKanjiText.textContent = '';
+            filipinoTranslationText.textContent = '';
+            indonesianTranslationText.textContent = '';
+            chineseTranslationText.textContent = '';
+            frenchTranslationText.textContent = '';
+            italianTranslationText.textContent = '';
+            arabicTranslationText.textContent = '';
+            germanTranslationText.textContent = '';
+            russianTranslationText.textContent = '';
+
+
+            // Populate translations if available in data
+            if (data.translations) {
+                if (data.translations.bangla) {
+                    banglaTranslationText.textContent = data.translations.bangla;
+                }
+                if (data.translations.korean) {
+                    koreanTranslationText.textContent = data.translations.korean;
+                }
+                if (data.translations.japanese) {
+                    japaneseRomajiText.textContent = data.translations.japanese.romaji || '';
+                    japaneseKanaText.textContent = data.translations.japanese.kana || '';
+                    japaneseKanjiText.textContent = data.translations.japanese.kanji || '';
+                }
+                if (data.translations.filipino) {
+                    filipinoTranslationText.textContent = data.translations.filipino;
+                }
+                if (data.translations.indonesian) {
+                    indonesianTranslationText.textContent = data.translations.indonesian;
+                }
+                if (data.translations.chinese) {
+                    chineseTranslationText.textContent = data.translations.chinese;
+                }
+                if (data.translations.french) {
+                    frenchTranslationText.textContent = data.translations.french;
+                }
+                if (data.translations.italian) {
+                    italianTranslationText.textContent = data.translations.italian;
+                }
+                if (data.translations.arabic) {
+                    arabicTranslationText.textContent = data.translations.arabic;
+                }
+                if (data.translations.german) {
+                    germanTranslationText.textContent = data.translations.german;
+                }
+                if (data.translations.russian) {
+                    russianTranslationText.textContent = data.translations.russian;
+                }
+            }
+            updateTranslationDisplay(); // Update visibility after populating
+
+            // Populate styled examples
+            styledExampleText.textContent = data.styledExamples?.[usageStyleSelect.value] || 'Click "Generate Example" to create one.';
+
+            // Populate word family
+            if (data.wordFamily && Object.keys(data.wordFamily).length > 0) {
+                for (const type in data.wordFamily) {
+                    if (data.wordFamily[type].length > 0) {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<strong>${type.charAt(0).toUpperCase() + type.slice(1)}:</strong> ${data.wordFamily[type].join(', ')}`;
+                        wordFamilyList.appendChild(li);
+                    }
+                }
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No word family or related terms generated.';
+                wordFamilyList.appendChild(li);
+            }
+
+            // Populate suffix/prefix
+            if (data.suffixPrefix && (data.suffixPrefix.prefixes.length > 0 || data.suffixPrefix.suffixes.length > 0)) {
+                if (data.suffixPrefix.prefixes.length > 0) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>Prefixes:</strong> ${data.suffixPrefix.prefixes.join(', ')}`;
+                    suffixPrefixList.appendChild(li);
+                }
+                if (data.suffixPrefix.suffixes.length > 0) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>Suffixes:</strong> ${data.suffixPrefix.suffixes.join(', ')}`;
+                    suffixPrefixList.appendChild(li);
+                }
+                if (data.suffixPrefix.notes) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>Notes:</strong> ${data.suffixPrefix.notes}`;
+                    suffixPrefixList.appendChild(li);
+                }
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No prefixes or suffixes generated.';
+                suffixPrefixList.appendChild(li);
+            }
+
+            // Populate idioms and phrases
+            if (data.idiomsPhrases && data.idiomsPhrases.length > 0) {
+                data.idiomsPhrases.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${item.phrase}:</strong> ${item.meaning} (e.g., "${item.example}")`;
+                    idiomsPhrasesList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No idioms or phrases generated.';
+                idiomsPhrasesList.appendChild(li);
+            }
+
+            // Populate common collocations
+            if (data.collocations && data.collocations.length > 0) {
+                data.collocations.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${item.collocation}:</strong> (e.g., "${item.example}")`;
+                    collocationsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No common collocations generated.';
+                collocationsList.appendChild(li);
+            }
+
+
+            // Populate synonyms
+            if (data.synonyms && data.synonyms.length > 0 && data.synonyms[0] !== 'none available') {
+                data.synonyms.forEach(syn => {
+                    const li = document.createElement('li');
+                    li.textContent = syn;
+                    synonymsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No synonyms found.';
+                synonymsList.appendChild(li);
+            }
+
+            // Populate antonyms
+            if (data.antonyms && data.antonyms.length > 0 && data.antonyms[0] !== 'none available') {
+                data.antonyms.forEach(ant => {
+                    const li = document.createElement('li');
+                    li.textContent = ant;
+                    antonymsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No antonyms found.';
+                antonymsList.appendChild(li);
+            }
+
+            // Set pronunciation
+            usPronunciationSpan.textContent = data.pronunciation.us || 'N/A';
+            ukPronunciationSpan.textContent = data.pronunciation.uk || 'N/A';
+
+            // Populate example sentences
+            if (data.sentences && data.sentences.length > 0) {
+                data.sentences.forEach(sentence => {
+                    const li = document.createElement('li');
+                    li.textContent = sentence;
+                    examplesList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No example sentences found.';
+                examplesList.appendChild(li);
+            }
+
+            currentWordData = data; // Store data for saving
+            currentWord = word;
+        }
+
+        // Function to generate a story using Gemini API
+        async function generateStoryForWord(word) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Write a very short, engaging paragraph (3-5 sentences) that prominently features the word '${word}'. Ensure the paragraph uses the word naturally and in a way that helps a learner understand its context.`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "text/plain", // Request plain text for story
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const story = result.candidates[0].content.parts[0].text;
+                    storyText.textContent = story;
+                    // Update currentWordData with the new story for saving purposes
+                    if (currentWordData) {
+                        currentWordData.story = story;
+                    }
+                } else {
+                    storyText.textContent = 'Could not generate a story for this word.';
+                    showMessage('Story Generation Failed', 'The AI could not generate a story. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error generating story from Gemini API:", error);
+                storyText.textContent = 'Error generating story.';
+                showMessage('API Error', `There was an issue generating a story. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to generate usage tips using Gemini API
+        async function generateUsageTipsForWord(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Provide a concise paragraph (2-4 sentences) explaining common usage tips, nuances, or potential common mistakes when using the word '${word}'. If applicable, mention its relationship to closely related words or how its meaning might subtly shift in different contexts. If no common mistakes or specific nuances exist, state that. The word's main meaning is: "${meaning}".`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "text/plain", // Request plain text for usage tips
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const tips = result.candidates[0].content.parts[0].text;
+                    usageTipsText.textContent = tips;
+                    // Update currentWordData with the new tips for saving purposes
+                    if (currentWordData) {
+                        currentWordData.usageTips = tips;
+                    }
+                } else {
+                    usageTipsText.textContent = 'Could not generate usage tips for this word.';
+                    showMessage('Tips Generation Failed', 'The AI could not generate usage tips. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error generating usage tips from Gemini API:", error);
+                usageTipsText.textContent = 'Error generating usage tips.';
+                showMessage('API Error', `There was an issue generating usage tips. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to generate quiz question using Gemini API
+        async function generateQuizQuestionForWord(word, meaning, exampleSentence) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                // Ask for a multiple-choice question about the word, with the correct answer and 3 plausible distractors.
+                const prompt = `Generate a multiple-choice quiz question for the word '${word}'. The question should test understanding of the word's meaning or usage. Provide 4 options (A, B, C, D) and specify the correct answer.
+                Word: ${word}
+                Meaning: ${meaning}
+                Example: ${exampleSentence || 'No specific example sentence provided.'}
+                
+                Respond in JSON format with the following structure:
+                {
+                  "question": "The quiz question text.",
+                  "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
+                  "correctAnswer": "The exact text of the correct option."
+                }`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "question": { "type": "STRING" },
+                                "options": {
+                                    "type": "ARRAY",
+                                    "items": { "type": "STRING" },
+                                    "minItems": 4,
+                                    "maxItems": 4
+                                },
+                                "correctAnswer": { "type": "STRING" }
+                            },
+                            "required": ["question", "options", "correctAnswer"]
+                        }
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const quizData = JSON.parse(jsonString);
+
+                    // Basic validation of quiz structure
+                    if (quizData.question && Array.isArray(quizData.options) && quizData.options.length === 4 && quizData.correctAnswer) {
+                        displayQuiz(quizData);
+                        if (currentWordData) {
+                            currentWordData.quiz = quizData; // Store quiz for saving
+                        }
+                    } else {
+                        console.error("Invalid quiz data structure:", quizData);
+                        quizQuestionText.textContent = 'Could not generate a valid quiz question.';
+                        quizOptionsContainer.innerHTML = '';
+                        showMessage('Quiz Generation Failed', 'The AI returned an invalid quiz format. Please try again.');
+                    }
+                } else {
+                    quizQuestionText.textContent = 'Could not generate a quiz question.';
+                    quizOptionsContainer.innerHTML = '';
+                    showMessage('Quiz Generation Failed', 'The AI could not generate a quiz. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error generating quiz from Gemini API:", error);
+                quizQuestionText.textContent = 'Error generating quiz question.';
+                quizOptionsContainer.innerHTML = '';
+                showMessage('API Error', `There was an issue generating a quiz. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to generate etymology using Gemini API
+        async function generateEtymologyForWord(word) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Provide a concise explanation of the etymology (origin and historical development) of the word '${word}'. If its origin is unknown or highly debated, state that. Focus on key historical roots and shifts in meaning.`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "text/plain", // Request plain text for etymology
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const etymology = result.candidates[0].content.parts[0].text;
+                    etymologyText.textContent = etymology;
+                    // Update currentWordData with the new etymology for saving purposes
+                    if (currentWordData) {
+                        currentWordData.etymology = etymology;
+                    }
+                } else {
+                    etymologyText.textContent = 'Could not generate etymology for this word.';
+                    showMessage('Etymology Generation Failed', 'The AI could not generate etymology. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error generating etymology from Gemini API:", error);
+                etymologyText.textContent = 'Error generating etymology.';
+                showMessage('API Error', `There was an issue generating etymology. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to generate related concepts/topics using Gemini API
+        async function generateRelatedConceptsForWord(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Provide a concise paragraph (2-4 sentences) explaining concepts or topics closely related to the word '${word}'. How does it connect to broader ideas or fields of study? If no direct related concepts exist, state that. The word's main meaning is: "${meaning}".`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "text/plain", // Request plain text for related concepts
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const concepts = result.candidates[0].content.parts[0].text;
+                    relatedConceptsText.textContent = concepts;
+                    // Update currentWordData with the new concepts for saving purposes
+                    if (currentWordData) {
+                        currentWordData.relatedConcepts = concepts;
+                    }
+                } else {
+                    relatedConceptsText.textContent = 'Could not generate related concepts for this word.';
+                    showMessage('Related Concepts Generation Failed', 'The AI could not generate related concepts. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error generating related concepts from Gemini API:", error);
+                relatedConceptsText.textContent = 'Error generating related concepts.';
+                showMessage('API Error', `There was an issue generating related concepts. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to generate synonym/antonym nuances using Gemini API
+        async function generateNuancesForWord(word, meaning, synonyms, antonyms) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                let prompt = `For the word '${word}', explain the subtle differences or nuances in meaning and usage between it and its synonyms and/or antonyms. Focus on when one might be more appropriate than another, or specific contexts where they differ. If no significant nuances exist, state that.`;
+                if (synonyms && synonyms.length > 0 && synonyms[0] !== 'none available') {
+                    prompt += `\nSynonyms: ${synonyms.join(', ')}.`;
+                }
+                if (antonyms && antonyms.length > 0 && antonyms[0] !== 'none available') {
+                    prompt += `\nAntonyms: ${antonyms.join(', ')}.`;
+                }
+                prompt += `\nWord meaning: "${meaning}"`;
+
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "text/plain", // Request plain text for nuances
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const nuances = result.candidates[0].content.parts[0].text;
+                    nuanceText.textContent = nuances;
+                    // Update currentWordData with the new nuances for saving purposes
+                    if (currentWordData) {
+                        currentWordData.nuances = nuances;
+                    }
+                } else {
+                    nuanceText.textContent = 'Could not generate nuances for this word.';
+                    showMessage('Nuances Generation Failed', 'The AI could not generate nuances. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error generating nuances from Gemini API:", error);
+                nuanceText.textContent = 'Error generating nuances.';
+                showMessage('API Error', `There was an issue generating nuances. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Translation functions for each new language
+        async function generateBanglaTranslation(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Translate the English word '${word}' (meaning: "${meaning}") into Bengali (Bangla). Also, provide any important notes about its usage, direct equivalence (or lack thereof), or cultural context. Be concise (2-4 sentences).`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory, generationConfig: { responseMimeType: "text/plain", } };
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const translation = result.candidates[0].content.parts[0].text;
+                    banglaTranslationText.textContent = translation;
+                    if (!currentWordData.translations) currentWordData.translations = {};
+                    currentWordData.translations.bangla = translation;
+                } else { banglaTranslationText.textContent = 'Could not generate Bengali translation.'; showMessage('Translation Failed', 'The AI could not generate Bengali translation. Please try again.'); }
+            } catch (error) { console.error("Error generating Bengali translation from Gemini API:", error); banglaTranslationText.textContent = 'Error generating Bengali translation.'; showMessage('API Error', `There was an issue generating Bengali translation. Error: ${error.message}`); } finally { hideLoading(); }
+        }
+
+        async function generateKoreanTranslation(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Translate the English word '${word}' (meaning: "${meaning}") into Korean. Also, provide any important notes about its usage, direct equivalence (or lack thereof), or cultural context. Be concise (2-4 sentences).`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory, generationConfig: { responseMimeType: "text/plain", } };
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const translation = result.candidates[0].content.parts[0].text;
+                    koreanTranslationText.textContent = translation;
+                    if (!currentWordData.translations) currentWordData.translations = {};
+                    currentWordData.translations.korean = translation;
+                } else { koreanTranslationText.textContent = 'Could not generate Korean translation.'; showMessage('Translation Failed', 'The AI could not generate Korean translation. Please try again.'); }
+            } catch (error) { console.error("Error generating Korean translation from Gemini API:", error); koreanTranslationText.textContent = 'Error generating Korean translation.'; showMessage('API Error', `There was an issue generating Korean translation. Error: ${error.message}`); } finally { hideLoading(); }
+        }
+
+        async function generateJapaneseTranslation(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Translate the English word '${word}' (meaning: "${meaning}") into Japanese. Provide the translation in Romaji, Kana, and Kanji. Also, include any important notes about its usage, direct equivalence (or lack thereof), or cultural context. Be concise.
+                Respond in JSON format with the following structure:
+                {
+                  "romaji": "Romaji translation",
+                  "kana": "Kana translation",
+                  "kanji": "Kanji translation (if applicable)",
+                  "notes": "Any usage notes/context (2-4 sentences)"
+                }`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory, generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "romaji": { "type": "STRING" }, "kana": { "type": "STRING" }, "kanji": { "type": "STRING" }, "notes": { "type": "STRING" } }, "required": ["romaji", "kana", "kanji"] } } };
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const translationData = JSON.parse(jsonString);
+                    if (translationData.romaji || translationData.kana || translationData.kanji) {
+                        japaneseRomajiText.textContent = translationData.romaji || 'N/A';
+                        japaneseKanaText.textContent = translationData.kana || 'N/A';
+                        japaneseKanjiText.textContent = translationData.kanji || 'N/A';
+                        if (!currentWordData.translations) currentWordData.translations = {};
+                        currentWordData.translations.japanese = { romaji: translationData.romaji, kana: translationData.kana, kanji: translationData.kanji, notes: translationData.notes || '' };
+                    } else { japaneseRomajiText.textContent = 'Could not generate Japanese translation.'; japaneseKanaText.textContent = 'Could not generate Japanese translation.'; japaneseKanjiText.textContent = 'Could not generate Japanese translation.'; showMessage('Translation Failed', 'The AI could not generate Japanese translation. Please try again.'); }
+                } else { japaneseRomajiText.textContent = 'Could not generate Japanese translation.'; japaneseKanaText.textContent = 'Could not generate Japanese translation.'; japaneseKanjiText.textContent = 'Could not generate Japanese translation.'; showMessage('Translation Failed', 'The AI could not generate Japanese translation. Please try again.'); }
+            } catch (error) { console.error("Error generating Japanese translation from Gemini API:", error); japaneseRomajiText.textContent = 'Error generating Japanese translation.'; japaneseKanaText.textContent = 'Error generating Japanese translation.'; japaneseKanjiText.textContent = 'Error generating Japanese translation.'; showMessage('API Error', `There was an issue generating Japanese translation. Error: ${error.message}`); } finally { hideLoading(); }
+        }
+
+        async function generateFilipinoTranslation(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Translate the English word '${word}' (meaning: "${meaning}") into Filipino. Also, provide any important notes about its usage, direct equivalence (or lack thereof), or cultural context. Be concise (2-4 sentences).`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory, generationConfig: { responseMimeType: "text/plain", } };
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const translation = result.candidates[0].content.parts[0].text;
+                    filipinoTranslationText.textContent = translation;
+                    if (!currentWordData.translations) currentWordData.translations = {};
+                    currentWordData.translations.filipino = translation;
+                } else { filipinoTranslationText.textContent = 'Could not generate Filipino translation.'; showMessage('Translation Failed', 'The AI could not generate Filipino translation. Please try again.'); }
+            } catch (error) { console.error("Error generating Filipino translation from Gemini API:", error); filipinoTranslationText.textContent = 'Error generating Filipino translation.'; showMessage('API Error', `There was an issue generating Filipino translation. Error: ${error.message}`); } finally { hideLoading(); }
+        }
+
+        async function generateIndonesianTranslation(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Translate the English word '${word}' (meaning: "${meaning}") into Indonesian. Also, provide any important notes about its usage, direct equivalence (or lack thereof), or cultural context. Be concise (2-4 sentences).`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory, generationConfig: { responseMimeType: "text/plain", } };
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const translation = result.candidates[0].content.parts[0].text;
+                    indonesianTranslationText.textContent = translation;
+                    if (!currentWordData.translations) currentWordData.translations = {};
+                    currentWordData.translations.indonesian = translation;
+                } else { indonesianTranslationText.textContent = 'Could not generate Indonesian translation.'; showMessage('Translation Failed', 'The AI could not generate Indonesian translation. Please try again.'); }
+            } catch (error) { console.error("Error generating Indonesian translation from Gemini API:", error); indonesianTranslationText.textContent = 'Error generating Indonesian translation.'; showMessage('API Error', `There was an issue generating Indonesian translation. Error: ${error.message}`); } finally { hideLoading(); }
+        }
+
+        async function generateChineseTranslation(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Translate the English word '${word}' (meaning: "${meaning}") into Simplified Chinese. Also, provide any important notes about its usage, direct equivalence (or lack thereof), or cultural context. Be concise (2-4 sentences).`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory, generationConfig: { responseMimeType: "text/plain", } };
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const translation = result.candidates[0].content.parts[0].text;
+                    chineseTranslationText.textContent = translation;
+                    if (!currentWordData.translations) currentWordData.translations = {};
+                    currentWordData.translations.chinese = translation;
+                } else { chineseTranslationText.textContent = 'Could not generate Chinese translation.'; showMessage('Translation Failed', 'The AI could not generate Chinese translation. Please try again.'); }
+            } catch (error) { console.error("Error generating Chinese translation from Gemini API:", error); chineseTranslationText.textContent = 'Error generating Chinese translation.'; showMessage('API Error', `There was an issue generating Chinese translation. Error: ${error.message}`); } finally { hideLoading(); }
+        }
+
+        async function generateFrenchTranslation(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Translate the English word '${word}' (meaning: "${meaning}") into French. Also, provide any important notes about its usage, direct equivalence (or lack thereof), or cultural context. Be concise (2-4 sentences).`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory, generationConfig: { responseMimeType: "text/plain", } };
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const translation = result.candidates[0].content.parts[0].text;
+                    frenchTranslationText.textContent = translation;
+                    if (!currentWordData.translations) currentWordData.translations = {};
+                    currentWordData.translations.french = translation;
+                } else { frenchTranslationText.textContent = 'Could not generate French translation.'; showMessage('Translation Failed', 'The AI could not generate French translation. Please try again.'); }
+            } catch (error) { console.error("Error generating French translation from Gemini API:", error); frenchTranslationText.textContent = 'Error generating French translation.'; showMessage('API Error', `There was an issue generating French translation. Error: ${error.message}`); } finally { hideLoading(); }
+        }
+
+        async function generateItalianTranslation(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Translate the English word '${word}' (meaning: "${meaning}") into Italian. Also, provide any important notes about its usage, direct equivalence (or lack thereof), or cultural context. Be concise (2-4 sentences).`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory, generationConfig: { responseMimeType: "text/plain", } };
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const translation = result.candidates[0].content.parts[0].text;
+                    italianTranslationText.textContent = translation;
+                    if (!currentWordData.translations) currentWordData.translations = {};
+                    currentWordData.translations.italian = translation;
+                } else { italianTranslationText.textContent = 'Could not generate Italian translation.'; showMessage('Translation Failed', 'The AI could not generate Italian translation. Please try again.'); }
+            } catch (error) { console.error("Error generating Italian translation from Gemini API:", error); italianTranslationText.textContent = 'Error generating Italian translation.'; showMessage('API Error', `There was an issue generating Italian translation. Error: ${error.message}`); } finally { hideLoading(); }
+        }
+
+        async function generateArabicTranslation(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Translate the English word '${word}' (meaning: "${meaning}") into Arabic (Standard Arabic). Also, provide any important notes about its usage, direct equivalence (or lack thereof), or cultural context. Be concise (2-4 sentences).`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory, generationConfig: { responseMimeType: "text/plain", } };
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const translation = result.candidates[0].content.parts[0].text;
+                    arabicTranslationText.textContent = translation;
+                    if (!currentWordData.translations) currentWordData.translations = {};
+                    currentWordData.translations.arabic = translation;
+                } else { arabicTranslationText.textContent = 'Could not generate Arabic translation.'; showMessage('Translation Failed', 'The AI could not generate Arabic translation. Please try again.'); }
+            } catch (error) { console.error("Error generating Arabic translation from Gemini API:", error); arabicTranslationText.textContent = 'Error generating Arabic translation.'; showMessage('API Error', `There was an issue generating Arabic translation. Error: ${error.message}`); } finally { hideLoading(); }
+        }
+
+        async function generateGermanTranslation(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Translate the English word '${word}' (meaning: "${meaning}") into German. Also, provide any important notes about its usage, direct equivalence (or lack thereof), or cultural context. Be concise (2-4 sentences).`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory, generationConfig: { responseMimeType: "text/plain", } };
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const translation = result.candidates[0].content.parts[0].text;
+                    germanTranslationText.textContent = translation;
+                    if (!currentWordData.translations) currentWordData.translations = {};
+                    currentWordData.translations.german = translation;
+                } else { germanTranslationText.textContent = 'Could not generate German translation.'; showMessage('Translation Failed', 'The AI could not generate German translation. Please try again.'); }
+            } catch (error) { console.error("Error generating German translation from Gemini API:", error); germanTranslationText.textContent = 'Error generating German translation.'; showMessage('API Error', `There was an issue generating German translation. Error: ${error.message}`); } finally { hideLoading(); }
+        }
+
+        async function generateRussianTranslation(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Translate the English word '${word}' (meaning: "${meaning}") into Russian. Also, provide any important notes about its usage, direct equivalence (or lack thereof), or cultural context. Be concise (2-4 sentences).`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory, generationConfig: { responseMimeType: "text/plain", } };
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`HTTP error! Status: ${response.status}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const translation = result.candidates[0].content.parts[0].text;
+                    russianTranslationText.textContent = translation;
+                    if (!currentWordData.translations) currentWordData.translations = {};
+                    currentWordData.translations.russian = translation;
+                } else { russianTranslationText.textContent = 'Could not generate Russian translation.'; showMessage('Translation Failed', 'The AI could not generate Russian translation. Please try again.'); }
+            } catch (error) { console.error("Error generating Russian translation from Gemini API:", error); russianTranslationText.textContent = 'Error generating Russian translation.'; showMessage('API Error', `There was an issue generating Russian translation. Error: ${error.message}`); } finally { hideLoading(); }
+        }
+
+
+        // Function to generate styled example sentence
+        async function generateStyledSentenceForWord(word, style) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Write a single, concise example sentence using the word '${word}' in a ${style} tone/style. The sentence should clearly demonstrate the word's meaning in that context.`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "text/plain",
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const sentence = result.candidates[0].content.parts[0].text;
+                    styledExampleText.textContent = sentence;
+                    if (!currentWordData.styledExamples) currentWordData.styledExamples = {};
+                    currentWordData.styledExamples[style] = sentence; // Save by style
+                } else {
+                    styledExampleText.textContent = `Could not generate a ${style} example sentence for this word.`;
+                    showMessage('Example Generation Failed', `The AI could not generate a ${style} example. Please try again.`);
+                }
+            } catch (error) {
+                console.error(`Error generating ${style} example from Gemini API:`, error);
+                styledExampleText.textContent = `Error generating ${style} example.`;
+                showMessage('API Error', `There was an issue generating a ${style} example. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to generate word family/related terms
+        async function generateWordFamilyForWord(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `For the English word '${word}' (meaning: "${meaning}"), provide a list of its word family (different forms like noun, verb, adjective, adverb) and other closely related terms. Group them by type if applicable.
+                
+                Respond in JSON format with the following structure:
+                {
+                  "noun": ["noun1", "noun2"],
+                  "verb": ["verb1", "verb2"],
+                  "adjective": ["adjective1"],
+                  "adverb": ["adverb1"],
+                  "related_terms": ["related_term1", "related_term2"]
+                }
+                If a category has no terms, provide an empty array for it.`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "noun": { "type": "ARRAY", "items": { "type": "STRING" } },
+                                "verb": { "type": "ARRAY", "items": { "type": "STRING" } },
+                                "adjective": { "type": "ARRAY", "items": { "type": "STRING" } },
+                                "adverb": { "type": "ARRAY", "items": { "type": "STRING" } },
+                                "related_terms": { "type": "ARRAY", "items": { "type": "STRING" } }
+                            }
+                        }
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const wordFamilyData = JSON.parse(jsonString);
+
+                    wordFamilyList.innerHTML = ''; // Clear existing list
+                    if (wordFamilyData) {
+                        for (const type in wordFamilyData) {
+                            if (wordFamilyData[type].length > 0) {
+                                const li = document.createElement('li');
+                                li.innerHTML = `<strong>${type.replace('_', ' ').charAt(0).toUpperCase() + type.replace('_', ' ').slice(1)}:</strong> ${wordFamilyData[type].join(', ')}`;
+                                wordFamilyList.appendChild(li);
+                            }
+                        }
+                        if (!currentWordData.wordFamily) currentWordData.wordFamily = {};
+                        currentWordData.wordFamily = wordFamilyData; // Save word family
+                    } else {
+                        wordFamilyList.textContent = 'Could not generate word family or related terms.';
+                        showMessage('Word Family Generation Failed', 'The AI could not generate word family data. Please try again.');
+                    }
+                } else {
+                    wordFamilyList.textContent = 'Could not generate word family or related terms.';
+                    showMessage('Word Family Generation Failed', 'The AI could not generate word family data. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error generating word family from Gemini API:", error);
+                wordFamilyList.textContent = 'Error generating word family.';
+                showMessage('API Error', `There was an issue generating word family. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to generate suffix/prefix information
+        async function generateSuffixPrefixForWord(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `For the English word '${word}' (meaning: "${meaning}"), identify and list common prefixes and suffixes that can be attached to it or its root. For each, provide its meaning and one example word if available.
+                
+                Respond in JSON format with the following structure:
+                {
+                  "prefixes": ["prefix1 (meaning: ..., e.g., example)", "prefix2 (...)"],
+                  "suffixes": ["suffix1 (meaning: ..., e.g., example)", "suffix2 (...)"],
+                  "notes": "Any general notes about affixes for this word's root/family (2-3 sentences)."
+                }
+                If no prefixes or suffixes are common or readily identifiable, return empty arrays. If no notes are needed, the 'notes' field can be an empty string.`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "prefixes": { "type": "ARRAY", "items": { "type": "STRING" } },
+                                "suffixes": { "type": "ARRAY", "items": { "type": "STRING" } },
+                                "notes": { "type": "STRING" }
+                            },
+                            "required": ["prefixes", "suffixes"]
+                        }
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const affixData = JSON.parse(jsonString);
+
+                    suffixPrefixList.innerHTML = ''; // Clear existing list
+                    if (affixData) {
+                        if (affixData.prefixes && affixData.prefixes.length > 0) {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<strong>Prefixes:</strong> ${affixData.prefixes.join(', ')}`;
+                            suffixPrefixList.appendChild(li);
+                        }
+                        if (affixData.suffixes && affixData.suffixes.length > 0) {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<strong>Suffixes:</strong> ${affixData.suffixes.join(', ')}`;
+                            suffixPrefixList.appendChild(li);
+                        }
+                        if (affixData.notes) {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<strong>Notes:</strong> ${affixData.notes}`;
+                            suffixPrefixList.appendChild(li);
+                        }
+                        if (!currentWordData.suffixPrefix) currentWordData.suffixPrefix = {};
+                        currentWordData.suffixPrefix = affixData; // Save affix data
+                    }
+                    if (suffixPrefixList.children.length === 0) {
+                        const li = document.createElement('li');
+                        li.textContent = 'No prefixes or suffixes generated for this word.';
+                        suffixPrefixList.appendChild(li);
+                    }
+                } else {
+                    suffixPrefixList.textContent = 'Could not generate suffix/prefix information.';
+                    showMessage('Suffix/Prefix Generation Failed', 'The AI could not generate suffix/prefix data. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error generating suffix/prefix from Gemini API:", error);
+                suffixPrefixList.textContent = 'Error generating suffix/prefix.';
+                showMessage('API Error', `There was an issue generating suffix/prefix. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to generate idioms and phrases
+        async function generateIdiomsForWord(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Provide a list of 3-5 common English idioms or phrases that use the word '${word}' (or a closely related form). For each idiom, provide its meaning and a concise example sentence.
+                
+                Respond in JSON format with the following structure:
+                [
+                  { "phrase": "idiom 1", "meaning": "meaning 1", "example": "example sentence 1" },
+                  { "phrase": "idiom 2", "meaning": "meaning 2", "example": "example sentence 2" }
+                ]
+                If no common idioms exist, return an empty array.`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    "phrase": { "type": "STRING" },
+                                    "meaning": { "type": "STRING" },
+                                    "example": { "type": "STRING" }
+                                },
+                                "required": ["phrase", "meaning", "example"]
+                            }
+                        }
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const idiomsData = JSON.parse(jsonString);
+
+                    idiomsPhrasesList.innerHTML = ''; // Clear existing list
+                    if (idiomsData && idiomsData.length > 0) {
+                        idiomsData.forEach(item => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<strong>${item.phrase}:</strong> ${item.meaning} (e.g., "${item.example}")`;
+                            idiomsPhrasesList.appendChild(li);
+                        });
+                        if (!currentWordData.idiomsPhrases) currentWordData.idiomsPhrases = [];
+                        currentWordData.idiomsPhrases = idiomsData; // Save idioms
+                    } else {
+                        const li = document.createElement('li');
+                        li.textContent = 'No idioms or phrases generated.';
+                        idiomsPhrasesList.appendChild(li);
+                    }
+                } else {
+                    idiomsPhrasesList.textContent = 'Could not generate idioms or phrases.';
+                    showMessage('Idioms Generation Failed', 'The AI could not generate idioms. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error generating idioms from Gemini API:", error);
+                idiomsPhrasesList.textContent = 'Error generating idioms.';
+                showMessage('API Error', `There was an issue generating idioms. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // New: Function to generate cultural context / usage nuances
+        async function generateCulturalContextForWord(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `Explain the cultural context or specific usage nuances of the English word '${word}' (meaning: "${meaning}"). Discuss how its connotation or common application might vary in different English-speaking regions (e.g., US vs. UK, or other Commonwealth nations) or in specific social/professional contexts. If no significant cultural nuances exist, state that. Provide a concise response (3-5 sentences).`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "text/plain",
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const culturalContext = result.candidates[0].content.parts[0].text;
+                    culturalContextText.textContent = culturalContext;
+                    if (!currentWordData.culturalContext) currentWordData.culturalContext = '';
+                    currentWordData.culturalContext = culturalContext; // Save cultural context
+                } else {
+                    culturalContextText.textContent = 'Could not generate cultural context.';
+                    showMessage('Cultural Context Generation Failed', 'The AI could not generate cultural context. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error generating cultural context from Gemini API:", error);
+                culturalContextText.textContent = 'Error generating cultural context.';
+                showMessage('API Error', `There was an issue generating cultural context. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // New: Function to generate common collocations
+        async function generateCollocationsForWord(word, meaning) {
+            showLoading();
+            try {
+                let chatHistory = [];
+                const prompt = `For the English word '${word}' (meaning: "${meaning}"), list 3-5 common collocations (words or phrases that frequently occur together with it). For each collocation, provide a concise example sentence.
+                
+                Respond in JSON format with the following structure:
+                [
+                  { "collocation": "collocation 1", "example": "example sentence 1" },
+                  { "collocation": "collocation 2", "example": "example sentence 2" }
+                ]
+                If no common collocations are readily available, return an empty array.`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    "collocation": { "type": "STRING" },
+                                    "example": { "type": "STRING" }
+                                },
+                                "required": ["collocation", "example"]
+                            }
+                        }
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const collocationsData = JSON.parse(jsonString);
+
+                    collocationsList.innerHTML = ''; // Clear existing list
+                    if (collocationsData && collocationsData.length > 0) {
+                        collocationsData.forEach(item => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<strong>${item.collocation}:</strong> (e.g., "${item.example}")`;
+                            collocationsList.appendChild(li);
+                        });
+                        if (!currentWordData.collocations) currentWordData.collocations = [];
+                        currentWordData.collocations = collocationsData; // Save collocations
+                    } else {
+                        const li = document.createElement('li');
+                        li.textContent = 'No common collocations generated.';
+                        collocationsList.appendChild(li);
+                    }
+                } else {
+                    collocationsList.textContent = 'Could not generate common collocations.';
+                    showMessage('Collocations Generation Failed', 'The AI could not generate collocations. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error generating collocations from Gemini API:", error);
+                collocationsList.textContent = 'Error generating collocations.';
+                showMessage('API Error', `There was an issue generating collocations. Error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+
+        // Event listeners for individual generate buttons
+        generateStoryBtn.addEventListener('click', () => {
+            if (currentWord) {
+                generateStoryForWord(currentWord);
+            } else {
+                showMessage('No Word', 'Please search for a word first to generate a story.');
+            }
+        });
+
+        generateTipsBtn.addEventListener('click', () => {
+            if (currentWord && currentWordData && currentWordData.meaning) {
+                generateUsageTipsForWord(currentWord, currentWordData.meaning);
+            } else {
+                showMessage('No Word Info', 'Please search for a word first to generate usage tips.');
+            }
+        });
+
+        generateQuizBtn.addEventListener('click', () => {
+            if (currentWord && currentWordData && currentWordData.meaning) {
+                generateQuizQuestionForWord(currentWord, currentWordData.meaning, currentWordData.sentences?.[0] || null);
+            } else {
+                showMessage('No Word Info', 'Please search for a word first to generate a quiz.');
+            }
+        });
+
+        generateEtymologyBtn.addEventListener('click', () => {
+            if (currentWord) {
+                generateEtymologyForWord(currentWord);
+            } else {
+                showMessage('No Word', 'Please search for a word first to generate etymology.');
+            }
+        });
+
+        generateConceptsBtn.addEventListener('click', () => {
+            if (currentWord && currentWordData && currentWordData.meaning) {
+                generateRelatedConceptsForWord(currentWord, currentWordData.meaning);
+            } else {
+                showMessage('No Word Info', 'Please search for a word first to generate related concepts.');
+            }
+        });
+
+        generateNuancesBtn.addEventListener('click', () => {
+            if (currentWord && currentWordData && currentWordData.meaning) {
+                generateNuancesForWord(currentWord, currentWordData.meaning, currentWordData.synonyms, currentWordData.antonyms);
+            } else {
+                showMessage('No Word Info', 'Please search for a word first to generate nuances.');
+            }
+        });
+
+        // Event listener for the new multi-language translation button
+        generateTranslationBtn.addEventListener('click', async () => {
+            if (!currentWord || !currentWordData || !currentWordData.meaning) {
+                showMessage('No Word Info', 'Please search for a word first to generate translations.');
+                return;
+            }
+
+            const selectedLang = translationLanguageSelect.value;
+            if (!currentWordData.translations) {
+                currentWordData.translations = {}; // Initialize if null
+            }
+
+            let shouldGenerate = false;
+
+            // Check if translation for selected language already exists
+            if (selectedLang === 'bangla' && !currentWordData.translations.bangla) shouldGenerate = true;
+            else if (selectedLang === 'korean' && !currentWordData.translations.korean) shouldGenerate = true;
+            else if (selectedLang === 'japanese' && (!currentWordData.translations.japanese || !currentWordData.translations.japanese.romaji)) shouldGenerate = true;
+            else if (selectedLang === 'filipino' && !currentWordData.translations.filipino) shouldGenerate = true;
+            else if (selectedLang === 'indonesian' && !currentWordData.translations.indonesian) shouldGenerate = true;
+            else if (selectedLang === 'chinese' && !currentWordData.translations.chinese) shouldGenerate = true;
+            else if (selectedLang === 'french' && !currentWordData.translations.french) shouldGenerate = true;
+            else if (selectedLang === 'italian' && !currentWordData.translations.italian) shouldGenerate = true;
+            else if (selectedLang === 'arabic' && !currentWordData.translations.arabic) shouldGenerate = true;
+            else if (selectedLang === 'german' && !currentWordData.translations.german) shouldGenerate = true;
+            else if (selectedLang === 'russian' && !currentWordData.translations.russian) shouldGenerate = true;
+
+
+            if (shouldGenerate) {
+                if (selectedLang === 'bangla') {
+                    await generateBanglaTranslation(currentWord, currentWordData.meaning);
+                } else if (selectedLang === 'korean') {
+                    await generateKoreanTranslation(currentWord, currentWordData.meaning);
+                } else if (selectedLang === 'japanese') {
+                    await generateJapaneseTranslation(currentWord, currentWordData.meaning);
+                } else if (selectedLang === 'filipino') {
+                    await generateFilipinoTranslation(currentWord, currentWordData.meaning);
+                } else if (selectedLang === 'indonesian') {
+                    await generateIndonesianTranslation(currentWord, currentWordData.meaning);
+                } else if (selectedLang === 'chinese') {
+                    await generateChineseTranslation(currentWord, currentWordData.meaning);
+                } else if (selectedLang === 'french') {
+                    await generateFrenchTranslation(currentWord, currentWordData.meaning);
+                } else if (selectedLang === 'italian') {
+                    await generateItalianTranslation(currentWord, currentWordData.meaning);
+                } else if (selectedLang === 'arabic') {
+                    await generateArabicTranslation(currentWord, currentWordData.meaning);
+                } else if (selectedLang === 'german') {
+                    await generateGermanTranslation(currentWord, currentWordData.meaning);
+                } else if (selectedLang === 'russian') {
+                    await generateRussianTranslation(currentWord, currentWordData.meaning);
+                }
+            } else {
+                showMessage('Already Generated', `Translation for ${selectedLang} is already generated.`);
+            }
+        });
+
+        // Event listener for generating styled example
+        generateStyledExampleBtn.addEventListener('click', () => {
+            if (currentWord && currentWordData && currentWordData.meaning) {
+                const selectedStyle = usageStyleSelect.value;
+                generateStyledSentenceForWord(currentWord, selectedStyle);
+            } else {
+                showMessage('No Word Info', 'Please search for a word first to generate a styled example.');
+            }
+        });
+
+        // Update styled example text when style selection changes
+        usageStyleSelect.addEventListener('change', () => {
+            if (currentWordData && currentWordData.styledExamples) {
+                styledExampleText.textContent = currentWordData.styledExamples[usageStyleSelect.value] || 'Click "Generate Example" to create one.';
+            } else {
+                styledExampleText.textContent = 'Click "Generate Example" to create one.';
+            }
+        });
+
+        // Event listener for generating word family
+        generateWordFamilyBtn.addEventListener('click', () => {
+            if (currentWord && currentWordData && currentWordData.meaning) {
+                generateWordFamilyForWord(currentWord, currentWordData.meaning);
+            } else {
+                showMessage('No Word Info', 'Please search for a word first to generate the word family.');
+            }
+        });
+
+        // Event listener for generating suffix/prefix
+        generateSuffixPrefixBtn.addEventListener('click', () => {
+            if (currentWord && currentWordData && currentWordData.meaning) {
+                generateSuffixPrefixForWord(currentWord, currentWordData.meaning);
+            } else {
+                showMessage('No Word Info', 'Please search for a word first to generate suffix/prefix information.');
+            }
+        });
+
+        // New: Event listener for generating idioms and phrases
+        generateIdiomsBtn.addEventListener('click', () => {
+            if (currentWord && currentWordData && currentWordData.meaning) {
+                generateIdiomsForWord(currentWord, currentWordData.meaning);
+            } else {
+                showMessage('No Word Info', 'Please search for a word first to generate idioms and phrases.');
+            }
+        });
+
+        // New: Event listener for generating cultural context
+        generateCulturalContextBtn.addEventListener('click', () => {
+            if (currentWord && currentWordData && currentWordData.meaning) {
+                generateCulturalContextForWord(currentWord, currentWordData.meaning);
+            } else {
+                showMessage('No Word Info', 'Please search for a word first to generate cultural context.');
+            }
+        });
+
+        // New: Event listener for generating common collocations
+        generateCollocationsBtn.addEventListener('click', () => {
+            if (currentWord && currentWordData && currentWordData.meaning) {
+                generateCollocationsForWord(currentWord, currentWordData.meaning);
+            } else {
+                showMessage('No Word Info', 'Please search for a word first to generate common collocations.');
+            }
+        });
+
+
+        // Search functionality with Gemini API
+        searchBtn.addEventListener('click', async () => {
+            const word = wordInput.value.trim().toLowerCase();
+            if (!word) {
+                showMessage('Input Required', 'Please enter a word to search.');
+                return;
+            }
+
+            showLoading(); // Show loading spinner
+
+            try {
+                let chatHistory = [];
+                // Initial prompt to get core data
+                const prompt = `Provide the meaning, a list of synonyms (or 'none available'), a list of antonyms (or 'none available'), US and UK phonetic spellings, and 3 example sentences for the word '${word}'. Respond in JSON format. For synonyms and antonyms, if none are available, return an array containing "none available". For sentences, provide complete, grammatically correct sentences.`;
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "meaning": { "type": "STRING" },
+                                "synonyms": {
+                                    "type": "ARRAY",
+                                    "items": { "type": "STRING" }
+                                },
+                                "antonyms": {
+                                    "type": "ARRAY",
+                                    "items": { "type": "STRING" }
+                                },
+                                "pronunciation": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "us": { "type": "STRING" },
+                                        "uk": { "type": "STRING" }
+                                    },
+                                    "required": ["us", "uk"]
+                                },
+                                "sentences": { // New property for sentences
+                                    "type": "ARRAY",
+                                    "items": { "type": "STRING" }
+                                }
+                            },
+                            "required": ["meaning", "synonyms", "antonyms", "pronunciation", "sentences"] // Mark sentences as required
+                        }
+                    }
+                };
+
+                const apiKey = "AIzaSyACFymYsDobIhQnDHYhZYB_dnRtT-1qBZY"; // API key will be provided by the Canvas runtime
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const parsedData = JSON.parse(jsonString);
+
+                    // Validate parsed data structure
+                    if (parsedData.meaning && parsedData.synonyms && parsedData.antonyms && parsedData.pronunciation && parsedData.sentences) {
+                        displayWordData(word, parsedData);
+                        showMessage('Word Found!', `Details for "${word}" are displayed. Click "Generate" buttons for more!`);
+
+                        // Initial fetch for these dynamic elements if not already present (from saved data, etc.)
+                        if (!parsedData.story) generateStoryForWord(word);
+                        if (!parsedData.usageTips) generateUsageTipsForWord(word, parsedData.meaning);
+                        if (!parsedData.quiz) generateQuizQuestionForWord(word, parsedData.meaning, parsedData.sentences[0] || null);
+                        if (!parsedData.etymology) generateEtymologyForWord(word);
+                        if (!parsedData.relatedConcepts) generateRelatedConceptsForWord(word, parsedData.meaning);
+                        if (!parsedData.nuances) generateNuancesForWord(word, parsedData.meaning, parsedData.synonyms, parsedData.antonyms);
+
+                        // Trigger initial generation for the default selected language and style, and word family
+                        const defaultTranslationLang = translationLanguageSelect.value;
+                        const defaultUsageStyle = usageStyleSelect.value;
+
+                        // Check if translations exist for the current word. If not, initialize.
+                        if (!currentWordData.translations) currentWordData.translations = {};
+                        if (!currentWordData.styledExamples) currentWordData.styledExamples = {};
+                        if (!currentWordData.wordFamily) currentWordData.wordFamily = {}; // Initialize wordFamily
+                        if (!currentWordData.suffixPrefix) currentWordData.suffixPrefix = { prefixes: [], suffixes: [], notes: '' }; // Initialize suffixPrefix
+                        if (!currentWordData.idiomsPhrases) currentWordData.idiomsPhrases = []; // Initialize idiomsPhrases
+                        if (!currentWordData.culturalContext) currentWordData.culturalContext = ''; // Initialize culturalContext
+                        if (!currentWordData.collocations) currentWordData.collocations = []; // Initialize collocations
+
+
+                        if (defaultTranslationLang === 'bangla' && !currentWordData.translations.bangla) await generateBanglaTranslation(word, parsedData.meaning);
+                        else if (defaultTranslationLang === 'korean' && !currentWordData.translations.korean) await generateKoreanTranslation(word, parsedData.meaning);
+                        else if (defaultTranslationLang === 'japanese' && (!currentWordData.translations.japanese || !currentWordData.translations.japanese.romaji)) await generateJapaneseTranslation(word, parsedData.meaning);
+                        else if (defaultTranslationLang === 'filipino' && !currentWordData.translations.filipino) await generateFilipinoTranslation(word, parsedData.meaning);
+                        else if (defaultTranslationLang === 'indonesian' && !currentWordData.translations.indonesian) await generateIndonesianTranslation(word, parsedData.meaning);
+                        else if (defaultTranslationLang === 'chinese' && !currentWordData.translations.chinese) await generateChineseTranslation(word, parsedData.meaning);
+                        else if (defaultTranslationLang === 'french' && !currentWordData.translations.french) await generateFrenchTranslation(word, parsedData.meaning);
+                        else if (defaultTranslationLang === 'italian' && !currentWordData.translations.italian) await generateItalianTranslation(word, parsedData.meaning);
+                        else if (defaultTranslationLang === 'arabic' && !currentWordData.translations.arabic) await generateArabicTranslation(word, parsedData.meaning);
+                        else if (defaultTranslationLang === 'german' && !currentWordData.translations.german) await generateGermanTranslation(word, parsedData.meaning);
+                        else if (defaultTranslationLang === 'russian' && !currentWordData.translations.russian) await generateRussianTranslation(word, parsedData.meaning);
+
+                        if (!currentWordData.styledExamples[defaultUsageStyle]) {
+                            generateStyledSentenceForWord(word, defaultUsageStyle);
+                        }
+                        if (Object.keys(currentWordData.wordFamily).length === 0) { // Only generate if empty
+                            generateWordFamilyForWord(word, parsedData.meaning);
+                        }
+                        if (!currentWordData.suffixPrefix || (currentWordData.suffixPrefix.prefixes.length === 0 && currentWordData.suffixPrefix.suffixes.length === 0)) {
+                            generateSuffixPrefixForWord(word, parsedData.meaning);
+                        }
+                        if (currentWordData.idiomsPhrases.length === 0) { // Only generate if empty
+                            generateIdiomsForWord(word, parsedData.meaning);
+                        }
+                        if (!currentWordData.culturalContext) { // Only generate if empty
+                            generateCulturalContextForWord(word, parsedData.meaning);
+                        }
+                        if (currentWordData.collocations.length === 0) { // Only generate if empty
+                            generateCollocationsForWord(word, parsedData.meaning);
+                        }
+
+
+                    } else {
+                        showMessage('Data Error', 'Could not parse word data. The API returned an unexpected format. Missing: meaning, synonyms, antonyms, pronunciation, or sentences.');
+                        console.error("Incomplete data from API:", parsedData);
+                        resultDisplay.classList.add('hidden');
+                    }
+                } else {
+                    showMessage('Word Not Found', `Sorry, "${word}" could not be found via the Gemini API or the response was empty.`);
+                    resultDisplay.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error("Error fetching from Gemini API:", error);
+                showMessage('API Error', `There was an issue fetching data for "${word}". Please try again. Error: ${error.message}`);
+                resultDisplay.classList.add('hidden');
+            } finally {
+                hideLoading(); // Hide loading spinner
+            }
+        });
+
+        // Save word functionality
+        saveBtn.addEventListener('click', () => {
+            if (!currentWord || !currentWordData) {
+                showMessage('Error', 'Please search for a word first before saving.');
+                return;
+            }
+
+            let savedWords = JSON.parse(localStorage.getItem('savedVocabulary')) || {};
+
+            if (savedWords[currentWord]) {
+                showMessage('Already Saved', `"${currentWord}" is already in your saved vocabulary.`);
+                return;
+            }
+
+            // Ensure all generated content is included when saving
+            savedWords[currentWord] = {
+                ...currentWordData,
+                story: currentWordData.story || '',
+                usageTips: currentWordData.usageTips || '',
+                quiz: currentWordData.quiz || null,
+                etymology: currentWordData.etymology || '',
+                relatedConcepts: currentWordData.relatedConcepts || '',
+                nuances: currentWordData.nuances || '',
+                translations: currentWordData.translations || null, // Save all translations
+                styledExamples: currentWordData.styledExamples || null, // Save all styled examples
+                wordFamily: currentWordData.wordFamily || null, // Save word family
+                suffixPrefix: currentWordData.suffixPrefix || null, // Save suffix/prefix
+                idiomsPhrases: currentWordData.idiomsPhrases || null, // Save idioms/phrases
+                culturalContext: currentWordData.culturalContext || null, // Save cultural context
+                collocations: currentWordData.collocations || null // Save collocations
+            };
+            try {
+                localStorage.setItem('savedVocabulary', JSON.stringify(savedWords));
+                showMessage('Saved Successfully!', `"${currentWord}" has been added to your saved vocabulary.`);
+                wordInput.value = ''; // Clear input after saving
+                resultDisplay.classList.add('hidden'); // Hide display after saving
+                currentWordData = null; // Clear current data
+                currentWord = '';
+            } catch (e) {
+                showMessage('Error Saving', 'Could not save the word. Local storage might be full or unavailable.');
+                console.error("Local storage save error:", e);
+            }
+        });
+
+        // Load saved words functionality
+        loadBtn.addEventListener('click', () => {
+            const savedWords = JSON.parse(localStorage.getItem('savedVocabulary')) || {};
+            const wordsArray = Object.keys(savedWords);
+
+            resultDisplay.classList.add('hidden'); // Hide search results
+            savedWordsSection.classList.remove('hidden'); // Show saved words section
+            savedWordsList.innerHTML = ''; // Clear previous list
+
+            if (wordsArray.length > 0) {
+                wordsArray.forEach(word => {
+                    const li = document.createElement('li');
+                    li.textContent = word;
+                    li.classList.add('flex', 'items-center', 'justify-center', 'text-sm'); // Tailwind classes for better display
+                    li.dataset.word = word; // Store word for click event
+                    li.addEventListener('click', (event) => {
+                        const clickedWord = event.target.dataset.word;
+                        const data = savedWords[clickedWord];
+                        if (data) {
+                            displayWordData(clickedWord, data);
+                            wordInput.value = clickedWord; // Put word back in input
+                            savedWordsSection.classList.add('hidden'); // Hide saved words list after selection
+                        }
+                    });
+                    savedWordsList.appendChild(li);
+                });
+                 showMessage('Saved Words Loaded', `You have ${wordsArray.length} saved words. Click on a word to view its details.`);
+            } else {
+                showMessage('No Saved Words', 'You have no words saved yet. Search and save some!');
+                savedWordsSection.classList.add('hidden'); // Hide section if empty
+            }
+        });
+
+        // Handler for "Yes, Clear All" button
+        function handleConfirmClear() {
+            localStorage.removeItem('savedVocabulary');
+            savedWordsList.innerHTML = ''; // Clear displayed list
+            savedWordsSection.classList.add('hidden'); // Hide section
+            showMessage('Cleared!', 'All saved vocabulary words have been removed.');
+            hideMessage(); // Close the modal and reset modal buttons
+        }
+
+        // Handler for "No" button during confirmation (same as default modal close)
+        function handleModalCloseNo() {
+            hideMessage(); // Simply hide the modal and reset buttons
+        }
+
+
+        // Clear all saved words functionality
+        clearSavedBtn.addEventListener('click', () => {
+            showMessage(
+                'Confirm Clear',
+                'Are you sure you want to delete ALL your saved vocabulary words?'
+            );
+
+            // Temporarily change modalCloseBtn text to "No"
+            modalCloseBtn.textContent = 'No';
+            // Add a temporary listener for the "No" button
+            modalCloseBtn.addEventListener('click', handleModalCloseNo, { once: true });
+
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.id = 'confirmClearBtn'; // Add an ID for easier removal
+            confirmBtn.textContent = 'Yes, Clear All';
+            confirmBtn.classList.add('btn', 'btn-primary', 'ml-3');
+            // Add a listener for the "Yes" button
+            confirmBtn.addEventListener('click', handleConfirmClear, { once: true });
+
+            // Add the confirm button to the modal
+            modalCloseBtn.parentNode.insertBefore(confirmBtn, modalCloseBtn.nextSibling);
+        });
+
+
+        // Initialize Web Speech API voices
+        // This is important because getVoices() is often empty until voices are loaded.
+        // It might be triggered by a user gesture or after a short delay.
+        window.speechSynthesis.onvoiceschanged = () => {
+            console.log("SpeechSynthesis voices changed. Voices available:", window.speechSynthesis.getVoices().length);
+            // You can optionally log voices to find specific ones:
+            // console.log(window.speechSynthesis.getVoices().map(v => v.name + " (" + v.lang + ")"));
+        };
+
+    </script>
+</body>
+</html>

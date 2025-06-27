@@ -110,6 +110,3 @@ To run this application with full AI functionality, you'll need a Google Gemini 
 
 Contributions are welcome! If you have suggestions for improvements, new features, or bug fixes, feel free to open an issue or submit a pull request.
 
-## 📄 License
-
-This project is open-sourced under the [MIT License](LICENSE).
